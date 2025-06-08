@@ -2479,10 +2479,11 @@ class Trainer:
 
             steps_skipped = 0
             rng_to_sync = False
+            epoch_iterator = None
             if steps_trained_in_current_epoch > 0 and num_update_steps_per_epoch is None:
                 # Since the dataloader does not have a length, we just loop until the required number of steps.
                 # Every time we reach the end of the dataloader, we increment epoch and reset the iterator.
-                epoch_iterator = iter(epoch_iterator)
+                epoch_iterator = iter(epoch_dataloader)
                 epoch_over = False
                 while steps_trained_in_current_epoch > 0:
                     try:
@@ -2493,6 +2494,7 @@ class Trainer:
                         epoch_over = True
                         break
                 if epoch_over:
+                    epochs_trained += 1
                     continue
                 assert steps_trained_in_current_epoch == 0
                 rng_to_sync = True
@@ -2518,7 +2520,8 @@ class Trainer:
                 rng_to_sync = True
 
             step = -1
-            epoch_iterator = iter(epoch_dataloader)
+            if epoch_iterator is None:
+                epoch_iterator = iter(epoch_dataloader)
             # We chunkify the epoch iterator into gradient accumulation steps `n` batches
             remainder = steps_in_epoch % args.gradient_accumulation_steps
             if remainder == 0:
